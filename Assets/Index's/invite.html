@@ -154,9 +154,7 @@
   <button id="audioBtn" class="audio-control" aria-pressed="false">▶︎</button>
 
   <script>
-    /* ===== Parallax simples e performático =====
-       O background é movido de acordo com o scroll (velocidade controlada por --bg-speed).
-       Usamos requestAnimationFrame para performance. */
+    
     (function(){
       const speed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bg-speed')) || 0.4;
       let latestKnownScrollY = 0;
