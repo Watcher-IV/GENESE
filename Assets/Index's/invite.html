@@ -1,11 +1,215 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The_Invite</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Invite</title>
+  <style>
+    
+    @font-face{
+      font-family: 'CustomMain';
+      src: url('../fonts/alagard.ttf') format('truetype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+    @font-face{
+      font-family: 'CustomQuote';
+      src: url('../fonts/GothicPixels.ttf') format('truetype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+
+    :root{
+      --bg-image: url('../images/green_tree.png');
+      --box-image: url('../images/paper.png');
+      --max-width: 900px;
+      --text-color: #0e0c0b;
+      --bg-speed: 0.45; /* quanto mais alto, mais rápido o parallax */
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      font-family: 'CustomMain', Georgia, serif;
+      background-image: var(--bg-image);
+      background-size: cover; /* cobre a área disponível; JS move a posição para parallax */
+      background-position: center top;
+      background-repeat: no-repeat;
+      color: var(--text-color);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      transition: background-position 0.05s linear;
+    }
+
+    /* máscara escura para manter legibilidade sobre o fundo */
+    .backdrop{position:fixed;inset:0;background:linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45));pointer-events:none;z-index:0}
+
+    /* Espaço extra top/bottom para que a página seja scrolável e revele mais da imagem de fundo */
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:180px 48px;position:relative;z-index:2}
+    .content{width:100%;max-width:var(--max-width);text-align:center}
+
+    /* Caixa que fica atrás do texto: use uma imagem com interior 'sólido' para melhor esticamento.
+       background-size: 100% 100% mantém a imagem cobrindo a área do conteúdo. */
+    .text-box{
+      display:inline-block; text-align:left; padding:56px 64px; line-height:1.6;
+      background-image: var(--box-image);
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 100% 100%;
+      color: inherit;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+      border-radius: 8px;
+      opacity:0; transform:translateY(18px); transition: all 800ms cubic-bezier(.2,.9,.2,1);
+    }
+    .text-box.loaded{opacity:1; transform:none}
+
+    blockquote{
+      margin:0 0 1.2rem 0; font-family: 'CustomQuote', 'CustomMain', serif; font-size:1.25rem; font-style:italic; text-align:center; letter-spacing:0.8px;
+    }
+
+    .text-box p{margin:0 0 1rem 0}
+    strong{font-weight:700}
+
+    /* ===== Spectral (efeito 'chama' leve) ===== */
+    a.spectral{position:relative; color:#1f0736; text-decoration:none; font-weight:800; padding:2px 6px; border-radius:4px}
+
+    /* Camadas de brilho/flame criadas por pseudo-elementos */
+    a.spectral::before, a.spectral::after{
+      content:''; position:absolute; left:-6px; right:-6px; top:-30%; bottom:-20%; z-index:-1; pointer-events:none; opacity:0.9; transform-origin:center bottom;
+      mix-blend-mode:screen;
+      filter: blur(12px);
+      border-radius:10px;
+    }
+    a.spectral::before{
+      background: radial-gradient(closest-side at 50% 20%, rgba(255,180,110,0.25), rgba(255,80,80,0.06) 40%, transparent 60%);
+      animation: spectralLift 2200ms infinite ease-in-out;
+    }
+    a.spectral::after{
+      background: radial-gradient(closest-side at 50% 0%, rgba(150,200,255,0.12), rgba(120,160,255,0.02) 40%, transparent 60%);
+      filter: blur(20px);
+      animation: spectralFlicker 1400ms infinite ease-in-out;
+    }
+
+    @keyframes spectralLift{
+      0%{transform:translateY(0) scale(1); opacity:0.6}
+      50%{transform:translateY(-8px) scale(1.06); opacity:1}
+      100%{transform:translateY(0) scale(1); opacity:0.6}
+    }
+    @keyframes spectralFlicker{
+      0%{transform:translateY(0) scale(1); opacity:0.55}
+      30%{transform:translateY(-4px) scale(1.02); opacity:0.95}
+      60%{transform:translateY(-2px) scale(1.01); opacity:0.75}
+      100%{transform:translateY(0) scale(1); opacity:0.55}
+    }
+    a.spectral:hover::before{ transform: translateY(-14px) scale(1.08); opacity:1 }
+
+    /* leve glow no texto */
+    a.spectral{ text-shadow: 0 0 8px rgba(70, 255, 230, 0.445), 0 0 18px rgba(40, 6, 190, 0.363); }
+
+    /* botão simples de áudio */
+    .audio-control{position:fixed;left:18px;bottom:18px;background:rgba(0,0,0,0.45);border:0;padding:10px 14px;border-radius:10px;color:#fff;cursor:pointer;z-index:5}
+
+    /* responsivo */
+    @media (max-width:720px){ .text-box{padding:28px 32px} blockquote{font-size:1rem} }
+
+  </style>
 </head>
 <body>
-    
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <!-- Conteúdo centralizado; o padding no wrap cria espaço extra para scrolar e revelar mais do background (parallax) -->
+  <div class="wrap">
+    <main class="content" role="main">
+      <div class="text-box" id="textBox">
+        <blockquote>“Pois se a vida não encontra repouso, que sejamos nós a buscá-lo.”</blockquote>
+
+        <p>Filho da eternidade,<br>Irmã do tempo sem fim,</p>
+
+        <p>Tu que respiras entre milhões de vozes sufocadas, tu que carregas na pele as marcas de dores que não cessam — escuta. A <strong>Legião Ânima</strong> fala.</p>
+
+        <p>Vivemos sob o peso da maldição que nos arrasta: não há fim, não há queda, não há silêncio. A seiva corre para sempre, as feridas não se fecham, as guerras não conhecem descanso. E cada memória é uma prisão, pois todos sabemos, todos lembramos: <strong>a Morte se foi</strong>.</p>
+
+        <p>Mas nem todo fardo é sem resposta.</p>
+
+        <p>Há aqueles que recusam a eternidade do sofrimento. Há aqueles que não aceitam a perpetuidade da dor. Há aqueles que, em meio à carne apodrecida e ao grito incessante, ainda ousam sonhar com a última libertação. Esses são os nossos irmãos.</p>
+
+        <p>A Legião Ânima não promete glória fácil, nem destino sem sacrifício. O caminho é ruína, o horizonte é incerto, e o preço da verdade pode consumir mais que o corpo. Mas é na travessia que nasce a força, é no desconhecido que pulsa a esperança, é no risco que se ergue o milagre.</p>
+
+        <p>Se teu espírito treme ao lembrar-se da maldição, se teus olhos buscam no horizonte mais que um amanhã repetido, se teu coração deseja que o ciclo volte a se fechar — então ouve: <strong>há lugar para ti entre nós.</strong></p>
+
+        <p>Atravessaremos ruínas que jamais dormiram, biomas que devoram a si mesmos, segredos enterrados sob eras intermináveis. Não marchamos em exércitos, marchamos em fé. Não carregamos apenas armas, mas também a lembrança de todos os que desejam descanso.</p>
+
+        <p>Somos poucos, mas não frágeis. Somos dispersos, mas não esquecidos. Somos o passo que desafia a eternidade.</p>
+
+        <p>E quando o silêncio retornar, quando a última fronteira se abrir, saberemos que não caminhamos em vão.</p>
+
+        <p>Se estas palavras arderem em teu peito, procura-nos.<br>
+        Se teu espírito clamar pelo fim, junta-te a nós.</p>
+
+        <p>Pois a <a href="legiao.html" class="spectral" id="legiaoLink">Legião Ânima</a> marcha não para a guerra, mas para o primeiro começo.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- ÁUDIO DE FUNDO: substitua pelo arquivo desejado -->
+  <audio id="bgAudio" src="../audio/the_invite.mp3" loop preload="auto"></audio>
+  <button id="audioBtn" class="audio-control" aria-pressed="false">▶︎</button>
+
+  <script>
+    /* ===== Parallax simples e performático =====
+       O background é movido de acordo com o scroll (velocidade controlada por --bg-speed).
+       Usamos requestAnimationFrame para performance. */
+    (function(){
+      const speed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bg-speed')) || 0.4;
+      let latestKnownScrollY = 0;
+      let ticking = false;
+
+      function onScroll(){
+        latestKnownScrollY = window.scrollY;
+        requestTick();
+      }
+      function requestTick(){ if(!ticking){ requestAnimationFrame(update); ticking = true; } }
+
+      function update(){
+        const offset = Math.round(latestKnownScrollY * speed);
+        // movemos o background para cima quando scrollar para mostrar outras partes da imagem
+        document.body.style.backgroundPosition = `center ${-offset}px`;
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', onScroll, {passive:true});
+      // inicializa posicao
+      update();
+    })();
+
+    /* ===== ÁUDIO: tenta autoplay, botão de controle ===== */
+    const audio = document.getElementById('bgAudio');
+    const btn = document.getElementById('audioBtn');
+    audio.volume = 0.6;
+    const tryPlay = async () => {
+      try {
+        await audio.play();
+        btn.textContent = '⏸';
+        btn.setAttribute('aria-pressed','true');
+      } catch(e){
+        // autoplay bloqueado. Mantemos o botão para iniciar manualmente.
+        audio.pause();
+        btn.textContent = '▶︎';
+        btn.setAttribute('aria-pressed','false');
+      }
+    };
+    // opcional: se quiser autoplay mudo, descomente a linha abaixo e comente tryPlay();
+    // audio.muted = true; audio.play();
+    tryPlay();
+
+    btn.addEventListener('click', async ()=>{
+      if(audio.paused){ await audio.play(); btn.textContent = '⏸'; btn.setAttribute('aria-pressed','true'); }
+      else { audio.pause(); btn.textContent = '▶︎'; btn.setAttribute('aria-pressed','false'); }
+    });
+
+    /* ===== Animação de entrada do texto ===== */
+    window.addEventListener('load', ()=>{ document.getElementById('textBox').classList.add('loaded'); });
+
+    /* ativa a animação spectral no link (caso queira manipular depois) */
+    document.getElementById('legiaoLink').classList.add('spectral');
+  </script>
 </body>
 </html>
