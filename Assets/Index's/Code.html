@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Expedição Gênese</title>
+  <style>
+    :root{
+      --bg: #0b0b0b;
+      --paper: #95ffe8;
+    }
+
+    @font-face{
+      font-family: "Pixelatus";
+      src: url("../Fonts/Pixelatus.ttf") format("opentype");
+    }
+    @font-face{
+      font-family: "PixelRunes";
+      src: url("../Fonts/PixelRunes.ttf") format("truetype");
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+
+    body{
+      background-color: var(--bg);
+      background-image: url('../Images/Imagem.png');
+      background-repeat: no-repeat;
+      background-position: center top;
+      background-size: 1940px;
+      background-attachment: scroll;
+      color: var(--paper);
+      font-family: "Pixelatus", sans-serif;
+      line-height: 1.6;
+      font-size: 18px;
+      padding: 3rem 1rem 8rem;
+      
+    }
+
+    /* Tela de introdução */
+    #intro-screen {
+      position: fixed;
+      inset: 0;
+      background: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 1.2s ease;
+    }
+    #intro-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #intro-screen h2 {
+      color: white;
+      font-family: "Pixelatus", sans-serif;
+      font-size: 2rem;
+      letter-spacing: 2px;
+    }
+
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:url('noise.png');
+      opacity:.08;
+      pointer-events:none;
+      mix-blend-mode:screen;
+      z-index:-1;
+    }
+
+    .container{
+      width: min(920px, 92%);
+      margin: 0 auto 6rem;
+      text-align: center;
+      background: rgba(0,0,0,0.56);
+      padding: 1.6rem 1.8rem;
+      border-radius: 6px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+    }
+
+    .gif-unico{
+      max-width: 400px;
+      height: auto;
+    }
+
+    h1{font-size: 30px;margin-bottom: 1rem;color: var(--paper);}
+    .content p{margin: 1rem 0;text-align: center;color: var(--paper);max-width: 840px;margin-left:auto;margin-right:auto;}
+    .placeholder-img{width:100%;max-height:420px;object-fit:cover;display:block;margin:1.6rem 0;border-radius:4px;}
+    .final-link{display:inline-block;margin-top:2.6rem;font-family:"PixelRunes",monospace;font-size:16px;letter-spacing:.6px;color:var(--paper);text-decoration:none;padding:.35rem .8rem;border-radius:6px;background:rgba(255,255,255,0.02);}
+</style>
+</head>
+<body>
+
+  <!-- Tela de introdução -->
+  <div id="intro-screen">
+    <img class="gif-unico" src="../Images/Gif2.gif" alt="time">
+  </div>
+
+  <!-- Conteúdo principal -->
+  <div class="container" role="main" aria-live="polite">
+    <h1>A Grande Expedição</h1>
+
+    <div class="content">
+      <p>O mundo se refez em silêncio e estranheza. A vida, inquieta, moldou-se em corpos híbridos de carne e feitiço, respirações de animal e de sonho, instintos que desafiam qualquer lógica. A cada era, uma mão invisível redesenhou as regras da existência — mas desta vez, a mudança não trouxe renovação. Trouxe um abismo.</p>
+
+      <img class="placeholder-img" src="../Images/sky.png" alt="sky">
+
+      <p><strong>A MORTE foi apagada.</strong><br>
+      Eternidade tornou-se maldição. As árvores crescem sem repouso, raízes esmagando raízes até que nada mais caiba no solo. Corpos humanos se alongam em tempo interminável, carregando doenças que não cedem, cicatrizes que não fecham, dores que não encontram trégua. Guerras se arrastam sem vencedor, prisioneiros gritam por séculos, e a loucura se multiplica como uma praga que jamais encontra cura.</p>
+
+      <p>Nada perece. Nada adormece. Nada parte.<br>
+      E todos se lembram.<br>
+      Pois o esquecimento não acompanha a eternidade — cada olhar carrega a memória viva de que o fim não existe mais.</p>
+
+      <img class="placeholder-img" src="../Images/dirt.png" alt="dirt">
+
+      <p>As cidades, cheias até o osso, afundam em sua própria superpopulação. Crianças nascem em corredores abarrotados, famintas de um futuro que nunca chega. O ar carrega o peso de incontáveis vozes, de séculos sobrepostos de sofrimento que se recusam a silenciar.</p>
+
+      <img class="placeholder-img" src="../Images/time.png" alt="time">
+
+      <p>Entre este excesso sem saída ergue-se a Legião Anima, irmandade de híbridos e visionários que acredita haver ainda um caminho: atravessar ruínas esquecidas, enfrentar reinos onde a própria realidade se contorce, e alcançar a origem da força que escreve e reescreve a vida.</p>
+
+      <p>Se sua jornada triunfar, a MORTE poderá retornar — e com ela, o descanso, a paz, o silêncio.<br>
+      Mas cada revelação cobra um preço, e talvez o fardo da eternidade não seja o maior dos horrores.</p>
+
+      <p>Expedição Gênese é a busca pela última fronteira, a travessia final em direção ao primeiro começo.</p>
+
+      <a href="pagina2.html" class="final-link" id="final-link">Uma força para além do nosso horizonte, venha comigo.</a>
+    </div>
+  </div>
+
+  <!-- Música -->
+  <audio id="bg-audio" preload="auto" loop playsinline>
+    <source src="../Songs/genese.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    const intro = document.getElementById("intro-screen");
+    const audio = document.getElementById("bg-audio");
+    audio.volume = 0.75;
+
+    function startSite() {
+      // Toca música
+      audio.play().catch(err => console.warn("Falha ao iniciar áudio:", err));
+      // Esconde a tela de introdução
+      intro.classList.add("hidden");
+    }
+
+    // Só dispara no primeiro clique
+    intro.addEventListener("click", startSite, { once: true });
+  </script>
+
+</body>
+</html>
