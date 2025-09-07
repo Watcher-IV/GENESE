@@ -30,7 +30,7 @@
     body{
       font-family: 'CustomMain', Georgia, serif;
       background-image: var(--bg-image);
-      background-size: cover; /* cobre a área disponível; JS move a posição para parallax */
+      background-size: cover; 
       background-position: center top;
       background-repeat: no-repeat;
       color: var(--text-color);
@@ -39,15 +39,12 @@
       transition: background-position 0.05s linear;
     }
 
-    /* máscara escura para manter legibilidade sobre o fundo */
+
     .backdrop{position:fixed;inset:0;background:linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45));pointer-events:none;z-index:0}
 
-    /* Espaço extra top/bottom para que a página seja scrolável e revele mais da imagem de fundo */
     .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:180px 48px;position:relative;z-index:2}
     .content{width:100%;max-width:var(--max-width);text-align:center}
 
-    /* Caixa que fica atrás do texto: use uma imagem com interior 'sólido' para melhor esticamento.
-       background-size: 100% 100% mantém a imagem cobrindo a área do conteúdo. */
     .text-box{
       display:inline-block; text-align:left; padding:56px 64px; line-height:1.6;
       background-image: var(--box-image);
@@ -68,7 +65,7 @@
     .text-box p{margin:0 0 1rem 0}
     strong{font-weight:700}
 
-    /* ===== Spectral (efeito 'chama' leve) ===== */
+    /* ===== Spectral (efeito de brilho leve) ===== */
     a.spectral{position:relative; color:#1f0736; text-decoration:none; font-weight:800; padding:2px 6px; border-radius:4px}
 
     /* Camadas de brilho/flame criadas por pseudo-elementos */
@@ -103,9 +100,6 @@
 
     /* leve glow no texto */
     a.spectral{ text-shadow: 0 0 8px rgba(70, 255, 230, 0.445), 0 0 18px rgba(40, 6, 190, 0.363); }
-
-    /* botão simples de áudio */
-    .audio-control{position:fixed;left:18px;bottom:18px;background:rgba(0,0,0,0.45);border:0;padding:10px 14px;border-radius:10px;color:#fff;cursor:pointer;z-index:5}
 
     /* responsivo */
     @media (max-width:720px){ .text-box{padding:28px 32px} blockquote{font-size:1rem} }
@@ -168,13 +162,13 @@
 
       function update(){
         const offset = Math.round(latestKnownScrollY * speed);
-        // movemos o background para cima quando scrollar para mostrar outras partes da imagem
+      
         document.body.style.backgroundPosition = `center ${-offset}px`;
         ticking = false;
       }
 
       window.addEventListener('scroll', onScroll, {passive:true});
-      // inicializa posicao
+    
       update();
     })();
 
@@ -194,8 +188,6 @@
         btn.setAttribute('aria-pressed','false');
       }
     };
-    // opcional: se quiser autoplay mudo, descomente a linha abaixo e comente tryPlay();
-    // audio.muted = true; audio.play();
     tryPlay();
 
     btn.addEventListener('click', async ()=>{
@@ -206,7 +198,6 @@
     /* ===== Animação de entrada do texto ===== */
     window.addEventListener('load', ()=>{ document.getElementById('textBox').classList.add('loaded'); });
 
-    /* ativa a animação spectral no link (caso queira manipular depois) */
     document.getElementById('legiaoLink').classList.add('spectral');
   </script>
 </body>
