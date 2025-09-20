@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>O_Conto — Legião Ânima</title>
+
+  <style>
+    /* fonte personalizada */
+    @font-face{
+      font-family: 'Alagard';
+      src: url('../fonts/alagard.ttf') format('truetype');
+      font-weight: normal; font-style: normal; font-display: swap;
+    }
+
+    :root{
+      --bg-image: url('../images/bg.jpg'); /* substitua por sua imagem de fundo */
+      --panel-bg: #000000; /* caixa totalmente preta */
+      --text-gray: #bfbfbf; /* texto legível cinza */
+      --censor-gray: #3b3b3b; /* barras de censura cinza */
+      --accent-purple: #6b2f6b; /* roxo fosco (para pequenos acentos se precisar) */
+      --maxw: 820px;
+      --audio-volume: 0.6;
+      --parallax-speed-bg: 0.35; /* velocidade do fundo relativo ao scroll (menor = mais lento) */
+      --parallax-speed-box: 0.08; /* leve movimento da caixa para criar profundidade */
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:#000;color:var(--text-gray);font-family:Alagard, Georgia, serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+    body{
+      /* imagem de fundo (parallax controlado via JS) */
+      background-image: var(--bg-image);
+      background-size: cover;
+      background-position: center top;
+      background-repeat: no-repeat;
+      transition: background-position 0.05s linear;
+    }
+
+    /* ENTRY OVERLAY (full-screen) - clique simples inicia audio */
+    #entryOverlay{
+      position:fixed; inset:0; z-index:9999;
+      background:#000; display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition: opacity 500ms ease;
+    }
+    #entryOverlay.hidden{ opacity:0; pointer-events:none; }
+
+    #entryOverlay img{ max-width:48vmin; max-height:48vmin; display:block; }
+
+    main{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:96px 20px; position:relative; z-index:2}
+
+    /* CAIXA CENTRAL */
+    .text-wrap{
+      width:100%; max-width:var(--maxw);
+      margin:0 auto; position:relative; text-align:center;
+      background: var(--panel-bg);
+      border-radius:8px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.75);
+      overflow:visible;
+      transform: translate3d(0,0,0); /* para performance */
+      transition: transform 200ms linear;
+    }
+
+    /* Borda/flame ao redor da caixa: pseudo-element com animação */
+    .text-wrap::before{
+      content:"";
+      position:absolute;
+      inset:-10px;
+      border-radius:12px;
+      pointer-events:none;
+      background: linear-gradient(90deg, rgba(107,47,107,0.06), rgba(107,47,107,0.08), rgba(40,0,40,0.02));
+      mix-blend-mode: screen;
+      filter: blur(12px) saturate(0.9);
+      opacity:0.9;
+      z-index:1;
+      animation: flameBorder 4.6s linear infinite;
+    }
+
+    @keyframes flameBorder{
+      0%{ transform: translateY(0) scale(1) }
+      50%{ transform: translateY(-3px) scale(1.01) }
+      100%{ transform: translateY(0) scale(1) }
+    }
+
+    /* conteúdo da caixa fica acima da borda pseudo */
+    .inner{
+      position:relative; z-index:5;
+      padding:34px 28px 52px 28px;
+    }
+
+    h1{ margin:0 0 8px 0; font-size:22px; color:var(--text-gray); letter-spacing:1px }
+    .lead{ margin:0 0 20px 0; font-size:13px; color:var(--text-gray); opacity:0.95 }
+
+    .long-text{
+      text-align:left; color:var(--text-gray); font-size:15px; line-height:1.6; letter-spacing:0.2px;
+      max-width:740px; margin:0 auto; position:relative;
+    }
+
+    /* --- CENSURA: barras CINZA com animação 'flame' por cima --- */
+    .censored{
+      position:relative; display:inline-block; color: transparent; user-select:none; vertical-align:middle;
+      font-weight:700;
+    }
+    /* base: a barra cinza */
+    .censored::before{
+      content: "";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, rgba(60,60,60,1), rgba(48,48,48,1));
+      border-radius:2px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.7) inset;
+      z-index:2;
+    }
+    /* camada de chamas (animada) sobre a barra */
+    .censored::after{
+      content:"";
+      position:absolute; inset:0;
+      z-index:3;
+      background:
+        radial-gradient(30% 60% at 20% 30%, rgba(107,47,107,0.28), transparent 35%),
+        radial-gradient(40% 70% at 70% 60%, rgba(120,40,120,0.20), transparent 40%);
+      mix-blend-mode: screen;
+      filter: blur(6px) contrast(1.1) saturate(1.1);
+      opacity:0.95;
+      transform-origin:center;
+      animation: flameMove 1600ms linear infinite;
+      pointer-events:none;
+    }
+
+    /* animação suave que desloca as 'chamas' sobre a barra para parecer vivo */
+    @keyframes flameMove{
+      0%{ transform: translateY(0) scaleY(1) translateX(-2%) ; opacity:0.95 }
+      25%{ transform: translateY(-2%) scaleY(1.02) translateX(1%) ; opacity:1 }
+      50%{ transform: translateY(-4%) scaleY(0.98) translateX(2%); opacity:0.9 }
+      75%{ transform: translateY(-2%) scaleY(1.01) translateX(-1%); opacity:1 }
+      100%{ transform: translateY(0) scaleY(1) translateX(-2%); opacity:0.95 }
+    }
+
+    /* se quiser que a barra 'corte' texto de largura diferente, basta aplicar width no span */
+    .censored.wide{ padding:8px 26px; display:inline-block; }
+    .censored.short{ padding:8px 40px; display:inline-block; }
+
+    /* frases legíveis: sem efeito de chamas (neutraliza o overlay) */
+    .legible{
+      color: var(--text-gray);
+      filter: none;
+      position: relative;
+      z-index:6; /* acima das barras se preciso */
+      text-shadow: 0 0 1px rgba(0,0,0,0.7);
+    }
+
+    /* imagens secretas: por padrão invisíveis, revelam no hover/focus */
+    .secret{
+      display:block; margin:28px auto; width:86%; max-width:640px; position:relative; cursor:pointer; outline:none;
+    }
+    .secret .secret__img{
+      display:block; width:100%; height:auto; opacity:0; transform: scale(0.98) translateY(6px);
+      transition: opacity 420ms cubic-bezier(.2,.9,.2,1), transform 360ms cubic-bezier(.2,.9,.2,1);
+      filter: grayscale(50%) contrast(0.9) brightness(0.88);
+      border-radius:6px; box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+      pointer-events:none;
+    }
+    .secret:hover .secret__img,
+    .secret:focus-within .secret__img{
+      opacity:1; transform:none; pointer-events:auto;
+      animation: revealGlitch 420ms;
+    }
+
+    @keyframes revealGlitch{
+      0%{ opacity:0; transform: translateY(6px) scale(0.985); filter: blur(2px) grayscale(60%) }
+      60%{ opacity:0.86; transform: translateY(2px) scale(0.995); filter: blur(0.6px) grayscale(30%) }
+      100%{ opacity:1; transform:none; filter:none }
+    }
+
+    /* links e acentos */
+    a{ color:var(--accent-purple); text-decoration:none; font-weight:700 }
+    a:hover{ text-decoration:underline; }
+
+    /* reduced-motion */
+    @media (prefers-reduced-motion: reduce){
+      .text-wrap::before, .censored::after, .secret .secret__img { animation: none; transition: none; filter: none; }
+    }
+
+    /* Responsividade */
+    @media (max-width:720px){
+      .inner{ padding:22px }
+      h1{ font-size:18px }
+      .long-text{ font-size:15px }
+      .censored{ padding:6px 12px }
+    }
+
+  </style>
+</head>
+<body>
+  <!-- ENTRADA: clique simples que inicia o audio (SEM fallback) -->
+  <div id="entryOverlay" role="button" aria-label="Entrar e ouvir" tabindex="0">
+    <img src="../images/entry.gif" alt="" />
+  </div>
+
+  <main>
+    <article class="text-wrap" aria-labelledby="title">
+      <div class="inner">
+        <h1 id="title">A Grande Expedição</h1>
+        <p class="lead">Quatro partiram quando a eternidade já pesava sobre tudo que respirava.</p>
+
+        <div class="long-text" role="article">
+          <p>Quatro seguiram por caminhos que não podiam ser mapeados, onde o ar carregava a descoberta e o chão se dissolvia sob o peso do tempo.</p>
+
+          <p>E deles, apenas restos permanecem. Ossos de esperança, quebrados.</p>
+
+          <p><span class="censored wide" aria-hidden="true">&lt;As escrituras falam de quatro viajantes que pisaram além do horizonte, onde a realidade se desfez em véus e o tempo deixa de reconhecer a própria face. Carregavam consigo a lembrança de todos os que clamavam pelo fim, e&gt;</span></p>
+
+          <p><span class="censored wide" aria-hidden="true">&lt;Ninguém sabe quanto durou a travessia. Alguns dizem que foram dias; outros, séculos. Pois na ausência da Morte, a medida do tempo não tem contagem.&gt;</span></p>
+
+          <p>Rumo aos Portões do Fim, horizonte onde o ciclo perdido talvez pudesse ser encontrado. Mas o Convés não se deixou alcançar. Não em terra, não em céu, não em sonho.</p>
+
+          <p><span class="censored wide" aria-hidden="true">&lt;E cada passo adiante parecia estender ainda mais o caminho, cada mão estendida encontrava apenas véus de puro nada, cada suspiro ecoava na eternidade sem resposta.&gt;</span></p>
+
+          <p>Rios e cascatas que subiam para o céu, florestas que dobravam sobre si mesmas, desertos que refletiam os olhos de Deus, Horizontes que pareciam dissolver-se em paradoxo.</p>
+
+          <p>&lt;E no meio de tudo, o murmúrio de que <span class="censored short" aria-hidden="true"> &lt;algo existe além,&gt;</span></p>
+
+          <p>&lt;<span class="censored short" aria-hidden="true">&lt;uma força antiga que escreve e reescreve,&gt;</span></p>
+
+          <p>&lt;<span class="censored short" aria-hidden="true">&lt;e que guarda &lt;o segredo da Morte &gt;como se fosse punição.&gt;</span></p>
+
+          <!-- IMAGEM 1 -->
+          <div class="secret" tabindex="0" aria-hidden="false">
+            <img class="secret__img" src="../images/secret1.png" alt="imagem obscura 1" loading="lazy" />
+          </div>
+
+          <p>Os quatro viajantes, se encontraram no desconhecido, avistando algo.</p>
+
+          <p>Um vislumbre verdadeiro de que há mais do que conhecemos. Um rumor de força que pulsa atrás do tecido da existência, uma entidade ou princípio que um dia, em eras primeiras, concedeu à vida o direito de terminar.</p>
+
+          <p>Mas os viajantes, não voltaram iguais. não voltaram inteiros. O próprio líder foi visto pela última vez em um deserto feito de vidro, olhando para o céu. dizem que toda vez que surgia falava uma frase antes de desaparecer:</p>
+
+          <p class="legible">“A Morte ainda existe… mas não aqui.”</p>
+
+          <p>Três se perderam entre os véus.</p>
+
+          <p><span class="censored wide" aria-hidden="true">&lt;Um retornou, carregando apenas o nome sussurrado; Apollo. Sombra que significou luz, mas que se enfraqueceu em meio a falha, e&gt;</span></p>
+
+          <p>Mas seus olhos refletiam algo que ninguém podia compreender, e sua voz carregava o sofrimento de séculos:</p>
+
+          <p><span class="censored wide" aria-hidden="true">&lt;A certeza de que a Morte ainda estava lá, mas sempre distante, invisível, inalcançável, como se zombasse daqueles que ousaram procurá-la.&gt;</span></p>
+
+          <!-- IMAGEM 2 -->
+          <div class="secret" tabindex="0" aria-hidden="false">
+            <img class="secret__img" src="../images/secret2.png" alt="imagem obscura 2" loading="lazy" />
+          </div>
+
+          <p><span class="censored short" aria-hidden="true">&lt;Os fragmentos encontrados falam de &lt;estrelas, &gt;de limites,&gt;</span></p>
+
+          <p><span class="censored short" aria-hidden="true">&lt;rios que correm para nenhum lugar,&gt;</span></p>
+
+          <p><span class="censored short" aria-hidden="true">&lt;e palavras que se dissolvem antes do pensamento.&gt;</span></p>
+
+          <p>Há sinais de esperança e desespero misturados.</p>
+
+          <p>A Grande Expedição não trouxe convicção ou vitória.</p>
+
+          <p><span class="censored wide" aria-hidden="true">&lt;Trouxe apenas a percepção dolorosa de que alguns destinos não podem ser tocados, que o &lt;Convés da Morte &gt;sempre será desconhecido, e que até mesmo os passos mais firmes encontram apenas &lt;o eco de sua própria frustração.&gt;</span></p>
+
+          <p>Aquilo que foi buscado permanece oculto. <span class="censored short" aria-hidden="true">&lt;A dor de tentar, o peso de caminhar sem fim,&gt;</span></p>
+
+          <p><span class="censored short" aria-hidden="true">&lt;o tormento de lembrar que a Eternidade é um fardo que não termina.&gt;</span></p>
+
+          <!-- IMAGEM 3 -->
+          <div class="secret" tabindex="0" aria-hidden="false">
+            <img class="secret__img" src="../images/secret3.png" alt="imagem obscura 3" loading="lazy" />
+          </div>
+
+          <p>...A dor, Transformou sua face em dois.<br>
+          ...Onde as estrelas começam a cair...<br>
+          ...Horizontalidade infinita, Verticalidade imensurável...<br>
+          ...Convés da Morte, Portões do Fim...<br>
+          Exanthris.</p>
+
+          <!-- IMAGEM 4 -->
+          <div class="secret" tabindex="0" aria-hidden="false">
+            <img class="secret__img" src="../images/secret4.png" alt="imagem obscura 4" loading="lazy" />
+          </div>
+
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <!-- ÁUDIO: será iniciada pelo clique no overlay (SEM fallback) -->
+  <audio id="ambientAudio" src="../audio/ambient.mp3" loop preload="auto" playsinline></audio>
+
+  <script>
+    /* Parallax: move o fundo mais devagar e aplica leve deslocamento na caixa */
+    (function(){
+      const bgSpeed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--parallax-speed-bg')) || 0.35;
+      const boxSpeed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--parallax-speed-box')) || 0.08;
+      const wrap = document.querySelector('body');
+      const box = document.querySelector('.text-wrap');
+
+      let latestKnownScrollY = 0;
+      let ticking = false;
+
+      function onScroll(){
+        latestKnownScrollY = window.scrollY;
+        requestTick();
+      }
+      function requestTick(){ if(!ticking){ requestAnimationFrame(update); ticking = true; } }
+
+      function update(){
+        const scrollY = latestKnownScrollY;
+        const bgOffset = Math.round(scrollY * bgSpeed);
+        const boxOffset = Math.round(scrollY * boxSpeed);
+        // move background position
+        document.body.style.backgroundPosition = `center ${-bgOffset}px`;
+        // subtle translate of box for depth
+        if(box){
+          box.style.transform = `translateY(${boxOffset * 0.3 * -1}px)`; // slight opposite movement
+        }
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', onScroll, {passive:true});
+      update();
+    })();
+
+    /* ENTRY overlay: clique simples -> play do audio e fade-out (SEM fallback) */
+    (function(){
+      const overlay = document.getElementById('entryOverlay');
+      const audio = document.getElementById('ambientAudio');
+      const TARGET = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--audio-volume')) || 0.6;
+      const STEP = 0.04;
+      const INTERVAL = 80;
+
+      function fadeInAudio(target = TARGET){
+        clearInterval(audio._fadeInterval);
+        audio.volume = 0;
+        audio._fadeInterval = setInterval(()=>{
+          const diff = target - audio.volume;
+          if(Math.abs(diff) < 0.01){ audio.volume = target; clearInterval(audio._fadeInterval); return; }
+          audio.volume = Math.max(0, Math.min(1, audio.volume + STEP));
+        }, INTERVAL);
+      }
+
+      async function onEnter(){
+        // tenta tocar — se o play for bloqueado, o usuário verá console (sem fallback como solicitado)
+        try {
+          await audio.play();
+          fadeInAudio();
+        } catch(e){
+          console.warn('audio.play() bloqueado pelo browser:', e);
+        }
+        overlay.classList.add('hidden');
+        overlay.addEventListener('transitionend', ()=>{
+          if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }, {once:true});
+      }
+
+      overlay.addEventListener('click', onEnter, {passive:true});
+      overlay.addEventListener('keydown', (ev)=>{ if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); onEnter(); }});
+      overlay.focus();
+    })();
+
+    /* permitir revelar imagens via teclado com Enter/Space (acessibilidade) */
+    (function(){
+      document.querySelectorAll('.secret').forEach(s=>{
+        s.addEventListener('keydown', (ev)=>{
+          if(ev.key === 'Enter' || ev.key === ' '){
+            ev.preventDefault();
+            const img = s.querySelector('.secret__img');
+            if(!img) return;
+            img.style.opacity = '1';
+            img.style.transform = 'none';
+            setTimeout(()=>{ img.style.opacity = ''; img.style.transform = ''; }, 1200);
+          }
+        });
+      });
+    })();
+
+  </script>
+</body>
+</html>
