@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Invite</title>
   <style>
-    
     @font-face{
       font-family: 'CustomMain';
       src: url('../fonts/alagard.ttf') format('truetype');
@@ -22,7 +21,8 @@
       --box-image: url('../images/paper.png');
       --max-width: 900px;
       --text-color: #0e0c0b;
-      --bg-speed: 0.45; /* quanto mais alto, mais rápido o parallax */
+      --bg-speed: 0.45;
+      --audio-target-volume: 0.6;
     }
 
     *{box-sizing:border-box}
@@ -30,7 +30,7 @@
     body{
       font-family: 'CustomMain', Georgia, serif;
       background-image: var(--bg-image);
-      background-size: cover; 
+      background-size: cover;
       background-position: center top;
       background-repeat: no-repeat;
       color: var(--text-color);
@@ -39,6 +39,34 @@
       transition: background-position 0.05s linear;
     }
 
+    .entry-overlay{
+      position:fixed;
+      inset:0;
+      background:#000;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      transition: opacity 600ms ease;
+      opacity:1;
+      pointer-events:auto;
+    }
+    .entry-overlay.hidden{
+      opacity:0;
+      pointer-events:none;
+    }
+    .entry-content{
+      text-align:center;
+      max-width:90%;
+    }
+    .entry-gif{
+      max-width:60vmin;
+      max-height:60vmin;
+      width:auto;
+      height:auto;
+      display:block;
+      margin:0 auto;
+    }
 
     .backdrop{position:fixed;inset:0;background:linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.45));pointer-events:none;z-index:0}
 
@@ -65,10 +93,7 @@
     .text-box p{margin:0 0 1rem 0}
     strong{font-weight:700}
 
-    /* ===== Spectral (efeito de brilho leve) ===== */
     a.spectral{position:relative; color:#1f0736; text-decoration:none; font-weight:800; padding:2px 6px; border-radius:4px}
-
-    /* Camadas de brilho/flame criadas por pseudo-elementos */
     a.spectral::before, a.spectral::after{
       content:''; position:absolute; left:-6px; right:-6px; top:-30%; bottom:-20%; z-index:-1; pointer-events:none; opacity:0.9; transform-origin:center bottom;
       mix-blend-mode:screen;
@@ -97,19 +122,21 @@
       100%{transform:translateY(0) scale(1); opacity:0.55}
     }
     a.spectral:hover::before{ transform: translateY(-14px) scale(1.08); opacity:1 }
-
-    /* leve glow no texto */
     a.spectral{ text-shadow: 0 0 8px rgba(70, 255, 230, 0.445), 0 0 18px rgba(40, 6, 190, 0.363); }
 
-    /* responsivo */
     @media (max-width:720px){ .text-box{padding:28px 32px} blockquote{font-size:1rem} }
 
   </style>
 </head>
 <body>
+  <div id="entryOverlay" class="entry-overlay" tabindex="0">
+    <div class="entry-content">
+      <img src="../Images/Moons.gif" alt="" class="Moons-gif" id="MoonsGif" />
+    </div>
+  </div>
+
   <div class="backdrop" aria-hidden="true"></div>
 
-  <!-- Conteúdo centralizado; o padding no wrap cria espaço extra para scrolar e revelar mais do background (parallax) -->
   <div class="wrap">
     <main class="content" role="main">
       <div class="text-box" id="textBox">
@@ -138,67 +165,106 @@
         <p>Se estas palavras arderem em teu peito, procura-nos.<br>
         Se teu espírito clamar pelo fim, junta-te a nós.</p>
 
-        <p>Pois a <a href="legiao.html" class="spectral" id="legiaoLink">Legião Ânima</a> marcha não para a guerra, mas para o primeiro começo.</p>
+        <p>Pois a <a href="o_Conto.html" class="spectral" id="ContoLink">Legião Ânima</a> marcha não para a guerra, mas para o primeiro começo.</p>
       </div>
     </main>
   </div>
 
-  <!-- ÁUDIO DE FUNDO: substitua pelo arquivo desejado -->
-  <audio id="bgAudio" src="../audio/the_invite.mp3" loop preload="auto"></audio>
-  <button id="audioBtn" class="audio-control" aria-pressed="false">▶︎</button>
+  <audio id="bgAudio" src="../Songs/the_invite.mp3" loop preload="auto" playsinline></audio>
 
   <script>
-    
+    // Parallax: atualiza a posição de background conforme scroll
     (function(){
       const speed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bg-speed')) || 0.4;
       let latestKnownScrollY = 0;
       let ticking = false;
 
-      function onScroll(){
-        latestKnownScrollY = window.scrollY;
-        requestTick();
-      }
+      function onScroll(){ latestKnownScrollY = window.scrollY; requestTick(); }
       function requestTick(){ if(!ticking){ requestAnimationFrame(update); ticking = true; } }
-
       function update(){
         const offset = Math.round(latestKnownScrollY * speed);
-      
         document.body.style.backgroundPosition = `center ${-offset}px`;
         ticking = false;
       }
-
       window.addEventListener('scroll', onScroll, {passive:true});
-    
       update();
     })();
 
-    /* ===== ÁUDIO: tenta autoplay, botão de controle ===== */
-    const audio = document.getElementById('bgAudio');
-    const btn = document.getElementById('audioBtn');
-    audio.volume = 0.6;
-    const tryPlay = async () => {
-      try {
-        await audio.play();
-        btn.textContent = '⏸';
-        btn.setAttribute('aria-pressed','true');
-      } catch(e){
-        // autoplay bloqueado. Mantemos o botão para iniciar manualmente.
-        audio.pause();
-        btn.textContent = '▶︎';
-        btn.setAttribute('aria-pressed','false');
+    // Entrada + áudio: mostra overlay, ao clique faz fade-out e inicia o áudio com fade-in
+    (function(){
+      const overlay = document.getElementById('entryOverlay');
+      const audio = document.getElementById('bgAudio');
+      const FADE_TARGET = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--audio-target-volume')) || 0.6;
+      const FADE_STEP = 0.04;
+      const FADE_INTERVAL = 80;
+
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+
+      function fadeInAudio(target = FADE_TARGET){
+        clearInterval(audio._fadeInterval);
+        audio.volume = 0;
+        audio._fadeInterval = setInterval(()=>{
+          const diff = target - audio.volume;
+          if(Math.abs(diff) < 0.01){
+            audio.volume = target;
+            clearInterval(audio._fadeInterval);
+            return;
+          }
+          audio.volume = Math.max(0, Math.min(1, audio.volume + FADE_STEP));
+        }, FADE_INTERVAL);
       }
-    };
-    tryPlay();
 
-    btn.addEventListener('click', async ()=>{
-      if(audio.paused){ await audio.play(); btn.textContent = '⏸'; btn.setAttribute('aria-pressed','true'); }
-      else { audio.pause(); btn.textContent = '▶︎'; btn.setAttribute('aria-pressed','false'); }
+      async function activateAudioAndHideOverlay(){
+        try {
+          await audio.play();
+          fadeInAudio();
+        } catch (err) {
+          try {
+            audio.muted = true;
+            await audio.play();
+          } catch(e){}
+        } finally {
+          overlay.classList.add('hidden');
+          const removeAfter = () => {
+            overlay.removeEventListener('transitionend', removeAfter);
+            if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+          };
+          overlay.addEventListener('transitionend', removeAfter);
+          setTimeout(()=>{ if(overlay.parentNode) { overlay.parentNode.removeChild(overlay); document.documentElement.style.overflow = ''; document.body.style.overflow = ''; } }, 800);
+        }
+      }
+
+      const trigger = (e) => {
+        if(e.type === 'keydown'){
+          const k = e.keyCode || e.which;
+          if(k !== 13 && k !== 32) return;
+          e.preventDefault();
+        }
+        overlay.removeEventListener('click', trigger);
+        overlay.removeEventListener('touchstart', trigger);
+        overlay.removeEventListener('keydown', trigger);
+        overlay.removeEventListener('keypress', trigger);
+        activateAudioAndHideOverlay();
+      };
+
+      overlay.addEventListener('click', trigger, {passive:true});
+      overlay.addEventListener('touchstart', trigger, {passive:true});
+      overlay.addEventListener('keydown', trigger);
+      overlay.addEventListener('keypress', trigger);
+
+      overlay.focus();
+    })();
+
+    // Entrada visual do texto e correção de id
+    window.addEventListener('load', ()=>{ 
+      const tb = document.getElementById('textBox');
+      if(tb) tb.classList.add('loaded');
     });
-
-    /* ===== Animação de entrada do texto ===== */
-    window.addEventListener('load', ()=>{ document.getElementById('textBox').classList.add('loaded'); });
-
-    document.getElementById('legiaoLink').classList.add('spectral');
+    const cLink = document.getElementById('ContoLink');
+    if(cLink) cLink.classList.add('spectral');
   </script>
 </body>
 </html>
