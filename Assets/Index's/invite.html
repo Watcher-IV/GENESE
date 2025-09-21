@@ -17,8 +17,8 @@
     }
 
     :root{
-      --bg-image: url('../images/green_tree.png');
-      --box-image: url('../images/paper.png');
+      --bg-image: url('../images/green_tree.png'); 
+      --box-image: url('../images/paper.png'); 
       --max-width: 900px;
       --text-color: #0e0c0b;
       --bg-speed: 0.45;
@@ -173,7 +173,7 @@
   <audio id="bgAudio" src="../Songs/the_invite.mp3" loop preload="auto" playsinline></audio>
 
   <script>
-    // Parallax: atualiza a posição de background conforme scroll
+    // Parallax:
     (function(){
       const speed = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bg-speed')) || 0.4;
       let latestKnownScrollY = 0;
